@@ -10,7 +10,7 @@ body{margin:0;background:#15182a;color:#f7f7fb;font:16px system-ui;line-height:1
 <section id="admin" class="hide"><h2>Spielleitung</h2><label>Admin-PIN</label><input id="pin" type="password"><button id="statsbtn">Ergebnisse laden</button><div id="stats"></div></section>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script>
-const URL="NEXT_PUBLIC_SUPABASE_URL=https://jbtvgweidrdfxstpqtyv.supabase.co",KEY="sb_publishable_33LILPRjuox-WLuqky9mUg_pulSKLJe",PIN="123456";
+const URL="https://jbtvgweidrdfxstpqtyv.supabase.co",KEY="sb_publishable_33LILPRjuox-WLuqky9mUg_pulSKLJe",PIN="123456";
 const W=["Apfel","Schlüssel","Fahrrad","Kerze","Katze","Uhr","Regenschirm","Tasse"],E=["🍎","🔑","🚲","🕯️","🐈","⌚","☂️","☕"];
 const $=x=>document.getElementById(x);let db,id,grp,ints=[];
 function page(p){["welcome","memorize","math","recall","done","admin"].forEach(x=>$(x).classList.toggle("hide",x!==p))}
