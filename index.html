@@ -1,6 +1,6 @@
-
 <!doctype html>
 <html lang="de">
+<head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Bild gegen Wort</title>
@@ -30,23 +30,25 @@ textarea{min-height:120px}
 .waiting-icon{font-size:3.5rem}
 .status{padding:12px;background:#303956;border-radius:12px;margin-top:12px}
 @media(max-width:480px){
-main{padding:12px}
-section{padding:14px}
-.tiles,.words{grid-template-columns:repeat(2,1fr);gap:8px}
-.tile,.word{height:clamp(65px,10vh,85px)}
-.timer{font-size:2.3rem}
-h1{font-size:2rem}}
+ main{padding:12px} section{padding:14px}
+ .tiles,.words{grid-template-columns:repeat(2,1fr);gap:8px}
+ .tile,.word{height:clamp(65px,10vh,85px)}
+ .timer{font-size:2.3rem} h1{font-size:2rem}
+}
 </style>
+</head>
+<body>
 <main>
 <small>WORKSHOP · VISUELLE DOMINANZ</small>
 <section id="welcome">
 <h1>Bild gegen Wort</h1>
 <p>Ein kurzes Gedächtnis-Experiment. Merke dir die Begriffe und gib später alle wieder, an die du dich erinnerst.</p>
-<label>Kürzel (freiwillig)</label>
+<label for="nick">Kürzel (freiwillig)</label>
 <input id="nick" maxlength="16" placeholder="z. B. Blau17">
 <button id="join">Teilnehmen</button>
 <p class="muted">Anonym, ohne Registrierung.</p>
 </section>
+
 <section id="waiting" class="hide">
 <div class="waiting">
 <div class="waiting-icon">⏳</div>
@@ -59,12 +61,14 @@ h1{font-size:2rem}}
 <p class="muted">Du kannst diese Seite geöffnet lassen.</p>
 </div>
 </section>
+
 <section id="memorize" class="hide">
 <h2>Präge dir die Liste ein!</h2>
 <div id="group"></div>
 <div class="timer" id="mt">16</div>
 <div id="list"></div>
 </section>
+
 <section id="math" class="hide">
 <h2>Kurz ablenken …</h2>
 <div class="timer" id="xt">30</div>
@@ -74,20 +78,23 @@ h1{font-size:2rem}}
 <input id="a2" inputmode="numeric">
 <button id="next">Weiter</button>
 </section>
+
 <section id="recall" class="hide">
 <h2>Was ist dir im Gedächtnis geblieben?</h2>
 <div class="timer" id="rt">60</div>
 <textarea id="answers" placeholder="Ein Begriff pro Zeile oder getrennt durch Kommas"></textarea>
 <button id="send">Antworten abgeben</button>
 </section>
+
 <section id="done" class="hide">
 <h2>Danke fürs Mitspielen!</h2>
 <p>Deine Antwort wurde erfasst. Bitte warte auf die gemeinsame Auflösung.</p>
 </section>
+
 <section id="admin" class="hide">
 <h2>Spielleitung</h2>
 <p class="muted">Hier kannst du das Experiment für alle Teilnehmenden freigeben und die Ergebnisse abrufen.</p>
-<label>Admin-Passwort</label>
+<label for="pin">Admin-Passwort</label>
 <input id="pin" type="password" autocomplete="off" placeholder="Admin-Passwort eingeben">
 <div class="status" id="adminstate">Status wird geladen …</div>
 <button id="startExperiment">Experiment für alle starten</button>
@@ -95,285 +102,149 @@ h1{font-size:2rem}}
 <button id="statsbtn">Ergebnisse laden</button>
 <div id="stats"></div>
 <hr style="margin:25px 0;border-color:#414966">
-<button id="resetExperiment"
-style="background:#dc6262;color:white">
-Experiment zurücksetzen
-</button>
-<p class="muted">
-Achtung: Alle bisherigen Teilnahmen und Ergebnisse werden gelöscht!
-</p>
+<button id="resetExperiment" style="background:#dc6262;color:white">Experiment zurücksetzen</button>
+<p class="muted">Achtung: Alle bisherigen Teilnahmen und Ergebnisse werden gelöscht!</p>
 </section>
 </main>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const SUPABASE_URL="https://jbtvgweidrdfxstpqtyv.supabase.co";
 const KEY="sb_publishable_33LILPRjuox-WLuqky9mUg_pulSKLJe";
 const W=["Apfel","Schlüssel","Fahrrad","Kerze","Katze","Uhr","Regenschirm","Tasse"];
 const E=["apfel.jpg","schluessel.jpg","fahrrad.jpg","kerze.jpg","katze.jpg","uhr.jpg","regenschirm.jpg","tasse.jpg"];
-const $=x=>document.getElementById(x);
+const $=id=>document.getElementById(id);
 const db=supabase.createClient(SUPABASE_URL,KEY);
-let id=null;
-let grp=null;
-let ints=[];
-let pollTimer=null;
-let experimentStarted=false;
-let sending=false;
-let mathStart=0;
-let recallStart=0;
+let id=null,grp=null,ints=[],pollTimer=null,experimentStarted=false,sending=false,mathStart=0,recallStart=0;
+
 function page(p){
-["welcome","waiting","memorize","math","recall","done","admin"].forEach(x=>{
-$(x).classList.toggle("hide",x!==p);
-});
+ ["welcome","waiting","memorize","math","recall","done","admin"].forEach(x=>$(x).classList.toggle("hide",x!==p));
 }
-function stop(){
-ints.forEach(clearInterval);
-ints=[];
-}
+function stop(){ints.forEach(clearInterval);ints=[];}
 function countdown(el,n,fn){
-let t=n;
-$(el).textContent=t;
-let h=setInterval(()=>{
-t--;
-$(el).textContent=Math.max(0,t);
-if(t<=0){
-clearInterval(h);
-fn();
-}
-},1000);
-ints.push(h);
+ let t=n;$(el).textContent=t;
+ let h=setInterval(()=>{t--;$(el).textContent=Math.max(0,t);if(t<=0){clearInterval(h);fn();}},1000);
+ ints.push(h);
 }
 function clean(s){
-return s.toLocaleLowerCase("de")
-.normalize("NFD")
-.replace(/[\u0300-\u036f]/g,"")
-.replace(/[^a-z0-9]/g,"");
+ return s.toLocaleLowerCase("de").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]/g,"");
 }
+
 // TEILNEHMEN
 async function joinExperiment(){
-$("join").disabled=true;
-try{
-let r=await db.rpc("join_experiment",{
-p_nickname:$("nick").value||null
-});
-if(r.error)throw r.error;
-id=r.data.participant_id;
-grp=r.data.group_name;
-page("waiting");
-// Sofort prüfen und danach jede Sekunde aktualisieren
-await checkExperimentState();
-if(!experimentStarted){
-pollTimer=setInterval(checkExperimentState,1000);
+ $("join").disabled=true;
+ try{
+  let r=await db.rpc("join_experiment",{p_nickname:$("nick").value||null});
+  if(r.error)throw r.error;
+  id=r.data.participant_id;grp=r.data.group_name;page("waiting");
+  await checkExperimentState();
+  if(!experimentStarted)pollTimer=setInterval(checkExperimentState,1000);
+ }catch(e){$("join").disabled=false;alert(e.message);}
 }
-}catch(e){
-$("join").disabled=false;
-alert(e.message);
-}
-}
-// STATUS FÜR ALLE TEILNEHMER PRÜFEN
+
+// STATUS FÜR TEILNEHMENDE PRÜFEN
 async function checkExperimentState(){
-if(experimentStarted||!id)return;
-try{
-let r=await db.rpc("get_experiment_state");
-if(r.error)throw r.error;
-if(r.data.status==="running"){
-clearInterval(pollTimer);
-pollTimer=null;
-beginExperiment();
+ if(experimentStarted||!id)return;
+ try{
+  let r=await db.rpc("get_experiment_state");
+  if(r.error)throw r.error;
+  if(r.data.status==="running"){clearInterval(pollTimer);pollTimer=null;beginExperiment();}
+ }catch(e){console.error("Statusabfrage:",e.message);}
 }
-}catch(e){
-console.error("Statusabfrage:",e.message);
-}
-}
+
 // EXPERIMENT BEGINNT
 function beginExperiment(){
-if(experimentStarted)return;
-experimentStarted=true;
-stop();
-$("group").textContent=
-grp==="image"?"Bildgruppe":"Wortgruppe";
-let items=grp==="image"
-?E.map(v=>`<div class="tile"><img src="Bilder/${v}" alt="${v.replace(".jpg","")}"></div>`)
-:W.map(v=>`<div class="word">${v}</div>`);
-$("list").className="single-stimulus";
-let i=0;
-$("list").innerHTML=items[i++];
-page("memorize");
-let sequence=setInterval(()=>{
-if(i<items.length){
-$("list").innerHTML=items[i++];
-}else{
-clearInterval(sequence);
+ if(experimentStarted)return;
+ experimentStarted=true;stop();
+ $("group").textContent=grp==="image"?"Bildgruppe":"Wortgruppe";
+ let items=grp==="image"
+  ?E.map(v=>`<div class="tile"><img src="Bilder/${v}" alt="${v.replace(".jpg","")}"></div>`)
+  :W.map(v=>`<div class="word">${v}</div>`);
+ $("list").className="single-stimulus";
+ let i=0;$("list").innerHTML=items[i++];page("memorize");
+ let sequence=setInterval(()=>{if(i<items.length){$("list").innerHTML=items[i++];}else clearInterval(sequence);},2000);
+ countdown("mt",16,()=>{clearInterval(sequence);math();});
 }
-},2000);
-countdown("mt",16,()=>{
-clearInterval(sequence);
-math();
-});
-}
+
 // RECHENAUFGABE
 function math(){
-stop();
-page("math");
-let x=[13,17,21,24][Math.floor(Math.random()*4)];
-let y=[6,7,8,9][Math.floor(Math.random()*4)];
-$("q1").textContent=`${x} × 3 = ?`;
-$("q2").textContent=`${y} × 4 = ?`;
-mathStart=Date.now();
-countdown("xt",30,recall);
- } 
+ stop();page("math");
+ let x=[13,17,21,24][Math.floor(Math.random()*4)],y=[6,7,8,9][Math.floor(Math.random()*4)];
+ $("q1").textContent=`${x} × 3 = ?`;$("q2").textContent=`${y} × 4 = ?`;
+ mathStart=Date.now();countdown("xt",30,recall);
+}
+
 // ERINNERUNGSPHASE
 function recall(){
-stop();
-page("recall");
-recallStart=Date.now();
-countdown("rt",60,send);
+ stop();page("recall");recallStart=Date.now();countdown("rt",60,send);
 }
+
 // ANTWORTEN SPEICHERN
 async function send(){
-if(sending)return;
-sending=true;
-stop();
-$("send").disabled=true;
-let a=$("answers").value
-.split(/[,;\n]+/)
-.map(s=>s.trim())
-.filter(Boolean);
-let hits=[...new Set(a.map(clean))]
-.filter(v=>W.some(w=>clean(w)===v)).length;
-try{
-let r=await db.rpc("submit_recall",{
-p_participant_id:id,
-p_answers:a,
-p_correct_count:hits,
-p_math1:$("a1").value,
-p_math2:$("a2").value,
-p_math_duration_ms:Date.now()-mathStart,
-p_recall_duration_ms:Date.now()-recallStart
-});
-if(r.error)throw r.error;
-page("done");
-}catch(e){
-sending=false;
-$("send").disabled=false;
-alert(e.message);
+ if(sending)return;
+ sending=true;stop();$("send").disabled=true;
+ let a=$("answers").value.split(/[,;\n]+/).map(s=>s.trim()).filter(Boolean);
+ let hits=[...new Set(a.map(clean))].filter(v=>W.some(w=>clean(w)===v)).length;
+ try{
+  let r=await db.rpc("submit_recall",{
+   p_participant_id:id,p_answers:a,p_correct_count:hits,p_math1:$("a1").value,p_math2:$("a2").value,
+   p_math_duration_ms:Date.now()-mathStart,p_recall_duration_ms:Date.now()-recallStart
+  });
+  if(r.error)throw r.error;
+  page("done");
+ }catch(e){sending=false;$("send").disabled=false;alert(e.message);}
 }
-}
+
 // ADMIN: STATUS ANZEIGEN
 async function refreshAdminState(){
-try{
-
-let r=await db.rpc("get_experiment_state");
-
-if(r.error)throw r.error;
-
-if(r.data.status==="running"){
-
-$("adminstate").textContent="🟢 Experiment läuft bereits.";
-$("startExperiment").disabled=true;
-
-}else{
-
-$("adminstate").textContent="🟡 Experiment wartet auf deinen Start.";
-$("startExperiment").disabled=false;
-
+ try{
+  let r=await db.rpc("get_experiment_state");
+  if(r.error)throw r.error;
+  let running=r.data.status==="running";
+  $("adminstate").textContent=running?"🟢 Experiment läuft bereits.":"🟡 Experiment wartet auf deinen Start.";
+  $("startExperiment").disabled=running;
+ }catch(e){$("adminstate").textContent="Fehler: "+e.message;}
 }
-
-}catch(e){
-
-$("adminstate").textContent="Fehler: "+e.message;
-
-}
-}
-
 // ADMIN: EXPERIMENT STARTEN
 async function adminStart(){
-
-let pin=$("pin").value;
-
-if(!pin){
-alert("Bitte zuerst das Admin-Passwort eingeben.");
-return;
+ let pin=$("pin").value;
+ if(!pin){alert("Bitte zuerst das Admin-Passwort eingeben.");return;}
+ if(!confirm("Möchtest du das Experiment jetzt für alle starten?"))return;
+ $("startExperiment").disabled=true;
+ try{
+  let r=await db.rpc("start_experiment",{p_pin:pin});
+  if(r.error)throw r.error;
+  $("adminstate").textContent="🟢 Experiment wurde gestartet!";
+ }catch(e){$("startExperiment").disabled=false;alert(e.message);}
+ await refreshAdminState();
 }
-
-if(!confirm("Möchtest du das Experiment jetzt für alle starten?"))return;
-
-$("startExperiment").disabled=true;
-
-try{
-
-let r=await db.rpc("start_experiment",{
-p_pin:pin
-});
-
-if(r.error)throw r.error;
-
-$("adminstate").textContent="🟢 Experiment wurde gestartet!";
-
-}catch(e){
-
-$("startExperiment").disabled=false;
-alert(e.message);
-
-}
-
-await refreshAdminState();
-}
-
 // ADMIN: EXPERIMENT ZURÜCKSETZEN
 async function adminReset(){
-
-let pin=$("pin").value;
-
-if(!pin){
-alert("Bitte zuerst das Admin-Passwort eingeben.");
-return;
+ let pin=$("pin").value;
+ if(!pin){alert("Bitte zuerst das Admin-Passwort eingeben.");return;}
+ if(!confirm("Wirklich zurücksetzen? Alle bisherigen Teilnahmen und Ergebnisse werden gelöscht!"))return;
+ $("resetExperiment").disabled=true;
+ try{
+  let r=await db.rpc("reset_experiment",{p_pin:pin});
+  if(r.error)throw r.error;
+  $("stats").innerHTML="";
+  alert("Experiment wurde erfolgreich zurückgesetzt.");
+  await refreshAdminState();
+ }catch(e){alert("Fehler beim Zurücksetzen: "+e.message);}
+ finally{$("resetExperiment").disabled=false;}
 }
-
-if(!confirm(
-"Wirklich zurücksetzen? Alle bisherigen Teilnahmen und Ergebnisse werden gelöscht!"
-))return;
-
-$("resetExperiment").disabled=true;
-try{
-let r=await db.rpc("reset_experiment",{
-p_pin:pin
-});
-if(r.error)throw r.error;
-$("stats").innerHTML="";
-alert("Experiment wurde erfolgreich zurückgesetzt.");
-await refreshAdminState();
-}catch(e){
-alert("Fehler beim Zurücksetzen: "+e.message);
-}finally{
-$("resetExperiment").disabled=false;
-}
-}// ADMIN: STATISTIK
+// ADMIN: STATISTIK LADEN
 $("statsbtn").onclick=async()=>{
-let pin=$("pin").value;
-if(!pin){
-$("stats").textContent="Bitte Admin-Passwort eingeben.";
-return;
-}
-$("stats").textContent="Ergebnisse werden geladen …";
-let r=await db.rpc("get_experiment_stats",{
-p_pin:pin
-});
-if(r.error){
-$("stats").textContent=r.error.message;
-return;
-}
-let d=r.data;
-$("stats").innerHTML=`
-<div class="stats">
-<div>Bildgruppe
-<div class="big">${d.image.avg_correct??"–"}</div>
-Ø richtige Begriffe · ${d.image.n} Personen
-</div>
-<div>Wortgruppe
-<div class="big">${d.word.avg_correct??"–"}</div>
-Ø richtige Begriffe · ${d.word.n} Personen
-</div>
-</div>`;
+ let pin=$("pin").value;
+ if(!pin){$("stats").textContent="Bitte Admin-Passwort eingeben.";return;}
+ $("stats").textContent="Ergebnisse werden geladen …";
+ let r=await db.rpc("get_experiment_stats",{p_pin:pin});
+ if(r.error){$("stats").textContent=r.error.message;return;}
+ let d=r.data;
+ $("stats").innerHTML=`<div class="stats">
+  <div>Bildgruppe<div class="big">${d.image.avg_correct??"–"}</div>Ø richtige Begriffe · ${d.image.n} Personen</div>
+  <div>Wortgruppe<div class="big">${d.word.avg_correct??"–"}</div>Ø richtige Begriffe · ${d.word.n} Personen</div>
+ </div>`;
 };
 // BUTTONS
 $("join").onclick=joinExperiment;
@@ -382,11 +253,8 @@ $("send").onclick=send;
 $("startExperiment").onclick=adminStart;
 $("resetExperiment").onclick=adminReset;
 // ADMINBEREICH ÜBER URL
-if(location.hash==="#leitung"){
-page("admin");
-refreshAdminState();
-}else{
-page("welcome");
-}
+if(location.hash==="#leitung"){page("admin");refreshAdminState();}
+else page("welcome");
 </script>
+</body>
 </html>
