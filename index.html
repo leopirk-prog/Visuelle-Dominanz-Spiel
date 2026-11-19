@@ -94,6 +94,14 @@ h1{font-size:2rem}}
 <p class="muted">Achtung: Der Start kann nicht rückgängig gemacht werden.</p>
 <button id="statsbtn">Ergebnisse laden</button>
 <div id="stats"></div>
+<hr style="margin:25px 0;border-color:#414966">
+<button id="resetExperiment"
+style="background:#dc6262;color:white">
+Experiment zurücksetzen
+</button>
+<p class="muted">
+Achtung: Alle bisherigen Teilnahmen und Ergebnisse werden gelöscht!
+</p>
 </section>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -311,29 +319,50 @@ alert(e.message);
 await refreshAdminState();
 }
 
-// ADMIN: STATISTIK
-$("statsbtn").onclick=async()=>{
+// ADMIN: EXPERIMENT ZURÜCKSETZEN
+async function adminReset(){
 
 let pin=$("pin").value;
 
 if(!pin){
-$("stats").textContent="Bitte Admin-Passwort eingeben.";
+alert("Bitte zuerst das Admin-Passwort eingeben.");
 return;
 }
 
-$("stats").textContent="Ergebnisse werden geladen …";
+if(!confirm(
+"Wirklich zurücksetzen? Alle bisherigen Teilnahmen und Ergebnisse werden gelöscht!"
+))return;
 
+$("resetExperiment").disabled=true;
+try{
+let r=await db.rpc("reset_experiment",{
+p_pin:pin
+});
+if(r.error)throw r.error;
+$("stats").innerHTML="";
+alert("Experiment wurde erfolgreich zurückgesetzt.");
+await refreshAdminState();
+}catch(e){
+alert("Fehler beim Zurücksetzen: "+e.message);
+}finally{
+$("resetExperiment").disabled=false;
+}
+}// ADMIN: STATISTIK
+$("statsbtn").onclick=async()=>{
+let pin=$("pin").value;
+if(!pin){
+$("stats").textContent="Bitte Admin-Passwort eingeben.";
+return;
+}
+$("stats").textContent="Ergebnisse werden geladen …";
 let r=await db.rpc("get_experiment_stats",{
 p_pin:pin
 });
-
 if(r.error){
 $("stats").textContent=r.error.message;
 return;
 }
-
 let d=r.data;
-
 $("stats").innerHTML=`
 <div class="stats">
 <div>Bildgruppe
@@ -346,13 +375,12 @@ $("stats").innerHTML=`
 </div>
 </div>`;
 };
-
 // BUTTONS
 $("join").onclick=joinExperiment;
 $("next").onclick=recall;
 $("send").onclick=send;
 $("startExperiment").onclick=adminStart;
-
+$("resetExperiment").onclick=adminReset;
 // ADMINBEREICH ÜBER URL
 if(location.hash==="#leitung"){
 page("admin");
