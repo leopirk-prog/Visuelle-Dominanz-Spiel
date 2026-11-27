@@ -1,0 +1,371 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bild gegen Wort</title>
+<style>
+body{margin:0;background:#15182a;color:#f7f7fb;font:16px system-ui;line-height:1.5}
+main{max-width:650px;margin:auto;padding:24px}
+section{background:#222740;border:1px solid #414966;border-radius:20px;padding:24px;margin:16px 0}
+h1{font-size:2.6rem;line-height:1.1}
+p,.muted{color:#bbc3d7}
+button{width:100%;padding:14px;border:0;border-radius:12px;background:#b8a1ff;font-weight:800;font-size:1rem;margin-top:12px;cursor:pointer}
+button:disabled{opacity:.5;cursor:not-allowed}
+input,textarea{width:100%;box-sizing:border-box;padding:12px;border-radius:10px;border:1px solid #414966;background:#141a2b;color:white;margin:8px 0 14px}
+textarea{min-height:120px}
+.hide{display:none}
+.timer{text-align:center;font-size:3rem;color:#c4b5fd;font-weight:800}
+.tiles,.words{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.tile,.word{background:#fff;color:#15182a;border-radius:10px;padding:6px;text-align:center;display:flex;align-items:center;justify-content:center;height:clamp(65px,12vh,105px);min-height:0;box-sizing:border-box;overflow:hidden}
+.tile img{width:100%;height:100%;object-fit:contain;display:block}
+.word{font-weight:700;font-size:clamp(.85rem,2.5vw,1.15rem)}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stats div{background:#303956;border-radius:12px;padding:14px}
+.big{font-size:2rem;color:#6ee7b7;font-weight:800}
+.single-stimulus{display:flex;justify-content:center;align-items:center;min-height:220px}
+.single-stimulus .tile,.single-stimulus .word{width:min(100%,320px);height:220px;font-size:2rem}
+.single-stimulus .tile img{width:100%;height:100%;object-fit:contain}
+.waiting{text-align:center;padding:30px 10px}
+.waiting-icon{font-size:3.5rem}
+.status{padding:12px;background:#303956;border-radius:12px;margin-top:12px}
+@media(max-width:480px){
+ main{padding:12px} section{padding:14px}
+ .tiles,.words{grid-template-columns:repeat(2,1fr);gap:8px}
+ .tile,.word{height:clamp(65px,10vh,85px)}
+ .timer{font-size:2.3rem} h1{font-size:2rem}
+}
+
+.group-card{background:#303956;border:1px solid #566184;border-radius:14px;padding:16px;cursor:pointer;text-align:left}
+.group-card:hover{border-color:#b8a1ff}
+.group-card .big{display:block}
+.group-card.active{outline:2px solid #b8a1ff}
+.group-details{margin-top:14px;background:#191f35;border:1px solid #414966;border-radius:14px;padding:14px}
+.person{border-top:1px solid #414966;padding:12px 0}
+.person:first-child{border-top:0}
+.person-name{font-weight:800}
+.person-answers{color:#bbc3d7;white-space:pre-wrap;overflow-wrap:anywhere;margin-top:5px}
+
+</style>
+</head>
+<body>
+<main>
+<small>WORKSHOP · VISUELLE DOMINANZ</small>
+
+<section id="welcome">
+<h1>Bild gegen Wort</h1>
+<p>Ein kurzes Gedächtnis-Experiment. Merke dir die Begriffe und gib später alle wieder, an die du dich erinnerst.</p>
+<label for="nick">Name oder Kürzel (Pflichtfeld)</label>
+<input id="nick" maxlength="16" required autocomplete="off" placeholder="Name oder Kürzel eingeben">
+<button id="join">Teilnehmen</button>
+<p class="muted">Anonym, ohne Registrierung.</p>
+</section>
+
+<section id="waiting" class="hide">
+<div class="waiting">
+<div class="waiting-icon">⏳</div>
+<h2>Du bist dabei!</h2>
+<p>Deine Teilnahme wurde erfolgreich registriert.</p>
+<div class="status">
+<strong>Bitte warte auf die Spielleitung.</strong>
+<p>Das Experiment startet gemeinsam, sobald die Freigabe erfolgt.</p>
+</div>
+<p class="muted">Du kannst diese Seite geöffnet lassen.</p>
+</div>
+</section>
+
+<section id="memorize" class="hide">
+<h2>Präge dir die Liste ein!</h2>
+<div id="group"></div>
+<div class="timer" id="mt">16</div>
+<div id="list"></div>
+</section>
+
+<section id="math" class="hide">
+<h2>Kurz ablenken …</h2>
+<div class="timer" id="xt">30</div>
+<label id="q1"></label>
+<input id="a1" inputmode="numeric">
+<label id="q2"></label>
+<input id="a2" inputmode="numeric">
+<button id="next">Weiter</button>
+</section>
+
+<section id="recall" class="hide">
+<h2>Was ist dir im Gedächtnis geblieben?</h2>
+<div class="timer" id="rt">60</div>
+<textarea id="answers" placeholder="Ein Begriff pro Zeile oder getrennt durch Kommas"></textarea>
+<button id="send">Antworten abgeben</button>
+</section>
+
+<section id="done" class="hide">
+<h2>Danke fürs Mitspielen!</h2>
+<p>Deine Antwort wurde erfasst. Bitte warte auf die gemeinsame Auflösung.</p>
+</section>
+
+<section id="admin" class="hide">
+<h2>Spielleitung</h2>
+<p class="muted">Hier kannst du das Experiment für alle Teilnehmenden freigeben und die Ergebnisse abrufen.</p>
+<label for="pin">Admin-Passwort</label>
+<input id="pin" type="password" autocomplete="off" placeholder="Admin-Passwort eingeben">
+<div class="status" id="adminstate">Status wird geladen …</div>
+<button id="startExperiment">Experiment für alle starten</button>
+<p class="muted">Achtung: Der Start kann nicht rückgängig gemacht werden.</p>
+<button id="statsbtn">Ergebnisse laden</button>
+<div id="stats"></div>
+<div id="participantDetails"></div>
+<hr style="margin:25px 0;border-color:#414966">
+<button id="resetExperiment" style="background:#dc6262;color:white">Experiment zurücksetzen</button>
+<p class="muted">Achtung: Alle bisherigen Teilnahmen und Ergebnisse werden gelöscht!</p>
+</section>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL="https://jbtvgweidrdfxstpqtyv.supabase.co";
+const KEY="sb_publishable_33LILPRjuox-WLuqky9mUg_pulSKLJe";
+const W=["Apfel","Schlüssel","Fahrrad","Kerze","Katze","Uhr","Regenschirm","Tasse","Sonnenbrille","Buch","Volleyball","Stern"];
+const E=["apfel.jpg","schluessel.jpg","fahrrad.jpg","kerze.jpg","katze.jpg","uhr.jpg","regenschirm.jpg","tasse.jpg","sonnenbrille.jpg","buch.jpg","volleyball.jpg","stern.jpg"];
+const $=id=>document.getElementById(id);
+const db=supabase.createClient(SUPABASE_URL,KEY);
+let id=null,grp=null,ints=[],pollTimer=null,experimentStarted=false,sending=false,mathStart=0,recallStart=0;
+
+function page(p){
+ ["welcome","waiting","memorize","math","recall","done","admin"].forEach(x=>$(x).classList.toggle("hide",x!==p));
+}
+function stop(){ints.forEach(clearInterval);ints=[];}
+function countdown(el,n,fn){
+ let t=n;$(el).textContent=t;
+ let h=setInterval(()=>{t--;$(el).textContent=Math.max(0,t);if(t<=0){clearInterval(h);fn();}},1000);
+ ints.push(h);
+}
+function clean(s){
+ return s.toLocaleLowerCase("de").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]/g,"");
+}
+
+// TEILNEHMEN
+async function joinExperiment(){
+  const nickname=$("nick").value.trim();
+  if(!nickname){alert("Bitte gib zuerst deinen Namen oder ein Kürzel ein.");$("nick").focus();return;}
+  $("join").disabled=true;
+  try{
+    let r=await db.rpc("join_experiment",{p_nickname:nickname});
+    if(r.error)throw r.error;
+    id=r.data.participant_id;grp=r.data.group_name;page("waiting");
+    await checkExperimentState();
+    if(!experimentStarted)pollTimer=setInterval(checkExperimentState,1000);
+  }catch(e){$("join").disabled=false;alert(e.message);}
+}
+
+// STATUS FÜR TEILNEHMENDE PRÜFEN
+async function checkExperimentState(){
+ if(experimentStarted||!id)return;
+ try{
+  let r=await db.rpc("get_experiment_state");
+  if(r.error)throw r.error;
+  if(r.data.status==="running"){clearInterval(pollTimer);pollTimer=null;beginExperiment();}
+ }catch(e){console.error("Statusabfrage:",e.message);}
+}
+
+// EXPERIMENT BEGINNT
+function beginExperiment(){
+  if(experimentStarted)return;
+  experimentStarted=true;stop();
+  $("group").textContent=grp==="image"?"Bildgruppe":"Wortgruppe";
+  $("list").className="single-stimulus";
+  $("list").innerHTML='<div class="waiting"><div class="waiting-icon">👀</div><h2>Mach dich bereit!</h2><p>Merke dir möglichst viele der gleich gezeigten Gegenstände.</p></div>';
+  page("memorize");
+  // Drei Sekunden Lese- und Vorbereitungszeit vor dem ersten Stimulus.
+  countdown("mt",3,()=>{
+    let items=grp==="image"
+      ?E.map(v=>`<div class="tile"><img src="Bilder/${v}" alt="${v.replace(".jpg","")}"></div>`)
+      :W.map(v=>`<div class="word">${v}</div>`);
+    let i=0;
+    $("list").innerHTML=items[i++];
+    // Zwölf Stimuli, jeweils zwei Sekunden sichtbar.
+    let sequence=setInterval(()=>{
+      if(i<items.length){$("list").innerHTML=items[i++];}
+      else clearInterval(sequence);
+    },2000);
+    countdown("mt",24,()=>{clearInterval(sequence);math();});
+  });
+}
+
+// RECHENAUFGABE
+function math(){
+  stop();page("math");
+  let x=[13,17,21,24][Math.floor(Math.random()*4)],y=[6,7,8,9][Math.floor(Math.random()*4)];
+  $("q1").textContent=`${x} × 3 = ?`;$("q2").textContent=`${y} × 4 = ?`;
+  $("a1").value="";$("a2").value="";
+  $("next").disabled=true;
+  mathStart=Date.now();
+  countdown("xt",30,()=>{$("next").disabled=false;});
+}
+
+// ERINNERUNGSPHASE
+function recall(){
+ stop();page("recall");recallStart=Date.now();countdown("rt",60,send);
+}
+
+// ANTWORTEN SPEICHERN
+async function send(){
+ if(sending)return;
+ sending=true;stop();$("send").disabled=true;
+ let a=$("answers").value.split(/[,;\n]+/).map(s=>s.trim()).filter(Boolean);
+ let hits=[...new Set(a.map(clean))].filter(v=>W.some(w=>clean(w)===v)).length;
+ try{
+  let r=await db.rpc("submit_recall",{
+   p_participant_id:id,p_answers:a,p_correct_count:hits,p_math1:$("a1").value,p_math2:$("a2").value,
+   p_math_duration_ms:Date.now()-mathStart,p_recall_duration_ms:Date.now()-recallStart
+  });
+  if(r.error)throw r.error;
+  page("done");
+ }catch(e){sending=false;$("send").disabled=false;alert(e.message);}
+}
+
+// ADMIN: STATUS ANZEIGEN
+async function refreshAdminState(){
+ try{
+  let r=await db.rpc("get_experiment_state");
+  if(r.error)throw r.error;
+  let running=r.data.status==="running";
+  $("adminstate").textContent=running?"🟢 Experiment läuft bereits.":"🟡 Experiment wartet auf deinen Start.";
+  $("startExperiment").disabled=running;
+ }catch(e){$("adminstate").textContent="Fehler: "+e.message;}
+}
+
+// ADMIN: EXPERIMENT STARTEN
+async function adminStart(){
+ let pin=$("pin").value;
+ if(!pin){alert("Bitte zuerst das Admin-Passwort eingeben.");return;}
+ if(!confirm("Möchtest du das Experiment jetzt für alle starten?"))return;
+ $("startExperiment").disabled=true;
+ try{
+  let r=await db.rpc("start_experiment",{p_pin:pin});
+  if(r.error)throw r.error;
+  $("adminstate").textContent="🟢 Experiment wurde gestartet!";
+ }catch(e){$("startExperiment").disabled=false;alert(e.message);}
+ await refreshAdminState();
+}
+
+// ADMIN: EXPERIMENT ZURÜCKSETZEN
+async function adminReset(){
+ let pin=$("pin").value;
+ if(!pin){alert("Bitte zuerst das Admin-Passwort eingeben.");return;}
+ if(!confirm("Wirklich zurücksetzen? Alle bisherigen Teilnahmen und Ergebnisse werden gelöscht!"))return;
+ $("resetExperiment").disabled=true;
+ try{
+  let r=await db.rpc("reset_experiment",{p_pin:pin});
+  if(r.error)throw r.error;
+  $("stats").innerHTML="";
+  $("participantDetails").innerHTML="";
+  participantData=[];
+  alert("Experiment wurde erfolgreich zurückgesetzt.");
+  await refreshAdminState();
+ }catch(e){alert("Fehler beim Zurücksetzen: "+e.message);}
+ finally{$("resetExperiment").disabled=false;}
+}
+
+// ADMIN: STATISTIK UND EINZELANTWORTEN
+let participantData = [];
+let activeGroup = null;
+
+function showGroupDetails(group){
+  activeGroup = group;
+  const list = participantData.filter(p => p.group_name === group);
+  document.querySelectorAll(".group-card").forEach(card=>{
+    card.classList.toggle("active", card.dataset.group === group);
+  });
+
+  const title = group === "image" ? "Bildgruppe" : "Wortgruppe";
+  const box = $("participantDetails");
+  if(!list.length){
+    box.innerHTML = `<div class="group-details"><strong>${title}</strong><p class="muted">Für diese Gruppe liegen noch keine Antworten vor.</p></div>`;
+    return;
+  }
+
+  box.innerHTML = `<div class="group-details"><h3>${title} – Einzelantworten</h3><p class="muted">${list.length} Teilnehmende</p><div id="peopleList"></div></div>`;
+  const people = $("peopleList");
+
+  list.forEach((p,index)=>{
+    const person = document.createElement("div");
+    person.className = "person";
+
+    const name = document.createElement("div");
+    name.className = "person-name";
+    name.textContent = p.nickname || `Teilnehmer/in ${index+1}`;
+
+    const score = document.createElement("div");
+    score.className = "muted";
+    score.textContent = `${p.correct_count ?? "–"} von 12 richtigen Begriffen`;
+
+    const answersLabel = document.createElement("div");
+    answersLabel.className = "muted";
+    answersLabel.textContent = "Eingegebene Antworten:";
+
+    const answers = document.createElement("div");
+    answers.className = "person-answers";
+    answers.textContent = Array.isArray(p.answers)
+      ? p.answers.join(", ")
+      : (p.answers ?? "Keine Antworten gespeichert.");
+
+    person.append(name,score,answersLabel,answers);
+    people.appendChild(person);
+  });
+}
+
+$("statsbtn").onclick = async()=>{
+  const pin = $("pin").value;
+  if(!pin){$("stats").textContent="Bitte Admin-Passwort eingeben.";return;}
+
+  $("stats").textContent = "Ergebnisse werden geladen …";
+  $("participantDetails").innerHTML = "";
+
+  try{
+    const statsResult = await db.rpc("get_experiment_stats",{p_pin:pin});
+    if(statsResult.error) throw statsResult.error;
+
+    // Separate, durch den Admin-PIN geschützte RPC-Funktion für Einzelantworten.
+    const detailResult = await db.rpc("get_experiment_details",{p_pin:pin});
+    if(detailResult.error) throw detailResult.error;
+
+    const d = statsResult.data;
+    participantData = Array.isArray(detailResult.data) ? detailResult.data : [];
+
+    $("stats").innerHTML = `
+      <div class="stats">
+        <button type="button" class="group-card" data-group="image">
+          Bildgruppe
+          <span class="big">${d.image.avg_correct ?? "–"} / 12</span>
+          Ø richtige Begriffe · ${d.image.n} Personen
+          <span class="muted">Klicken für Einzelantworten</span>
+        </button>
+        <button type="button" class="group-card" data-group="word">
+          Wortgruppe
+          <span class="big">${d.word.avg_correct ?? "–"} / 12</span>
+          Ø richtige Begriffe · ${d.word.n} Personen
+          <span class="muted">Klicken für Einzelantworten</span>
+        </button>
+      </div>`;
+
+    document.querySelectorAll(".group-card").forEach(card=>{
+      card.addEventListener("click",()=>showGroupDetails(card.dataset.group));
+    });
+  }catch(e){
+    $("stats").textContent = "Fehler beim Laden: " + e.message;
+  }
+};
+
+// BUTTONS
+$("join").onclick=joinExperiment;
+$("next").onclick=recall;
+$("send").onclick=send;
+$("startExperiment").onclick=adminStart;
+$("resetExperiment").onclick=adminReset;
+
+// ADMINBEREICH ÜBER URL
+if(location.hash==="#leitung"){page("admin");refreshAdminState();}
+else page("welcome");
+</script>
+</body>
+</html>
